@@ -173,11 +173,12 @@ int main() {
     }
     while (1) {
     dev_count = get_adb_devices(devices);
-
+    
+    /*
     if (dev_count > 0) {
     //    printf("\n[+] foud device\n\n");
         break;
-    }
+    }*/
 
     printf("\r[*] waiting for device connection...");
     fflush(stdout);
