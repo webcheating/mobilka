@@ -37,12 +37,14 @@ int get_installed_apps(char apps[][256]){
 
 int get_scripts(const char *dir, char scripts[][256]){
     DIR *d = opendir(dir);
-    if(!d) return 0;
+    if(!d) return -1;
 
     struct dirent *ent;
     int count = 0;
     while((ent = readdir(d)) != NULL && count < MAX_ITEMS){
-        if(strstr(ent->d_name, ".js")){
+        //if(strstr(ent->d_name, ".js")){
+        char *dot = strrchr(ent->d_name, '.');
+        if(dot && strcmp(dot, ".js") == 0){
             snprintf(scripts[count], 256, "%s/%s", dir, ent->d_name);
             count++;
         }
@@ -63,6 +65,19 @@ void get_local_ip(char *buf, int size) {
     sscanf(out, "%63s", buf);
 }
 
+int get_adb_devices(char devices[][128]){
+    int sock = socket(AF_INET, SOCKSTREAM, 0);
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(5037);
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+    send(sock, "000CHost:devices", 16, 0);
+}
+
+/*
 int get_adb_devices(char devices[][128]) {
     char *out = exec_cmd("adb devices");
     if (!out) return 0;
@@ -78,7 +93,7 @@ int get_adb_devices(char devices[][128]) {
         line = strtok(NULL, "\n");
     }
     return count;
-}
+}*/
 
 int menu_select(char items[][256], int count, const char *title){
     int highlight = 0;
@@ -198,26 +213,21 @@ int main() {
 
     // -------------------- proxy -----------------------------
     char proxy_cmd[512];
-    snprintf(proxy_cmd, sizeof(proxy_cmd),
-        "adb -s %s shell settings put global http_proxy %s:8080",
-        device, local_ip);
+    snprintf(proxy_cmd, sizeof(proxy_cmd), "adb -s %s shell settings put global http_proxy %s:8080", device, local_ip);
 
     system(proxy_cmd);
     printf("[+] proxy set\n\n");
 
     // ------------------- scrcpy -----------------------------
     char scrcpy_cmd[256];
-    snprintf(scrcpy_cmd, sizeof(scrcpy_cmd),
-        "scrcpy -s %s &", device);
+    snprintf(scrcpy_cmd, sizeof(scrcpy_cmd), "scrcpy -s %s &", device);
     system(scrcpy_cmd);
 
     printf("[+] scrcpy started\n");
 
     // ------------------ frida-server -------------------------
     char frida_srv_cmd[512];
-    snprintf(frida_srv_cmd, sizeof(frida_srv_cmd),
-        "adb -s %s shell \"su -c '/data/local/tmp/frida/frida-server* &'\"",
-        device);
+    snprintf(frida_srv_cmd, sizeof(frida_srv_cmd), "adb -s %s shell \"su -c '/data/local/tmp/frida/frida-server* &'\"", device);
     system(frida_srv_cmd);
 
     printf("[+] frida-server started\n\n");
@@ -261,12 +271,11 @@ int main() {
     endwin();
 
     char frida_cmd[1024];
-    snprintf(frida_cmd, sizeof(frida_cmd),
-        "frida -U -f %s -l %s",
-        selected_app, selected_script);
+    snprintf(frida_cmd, sizeof(frida_cmd), "frida -U -f %s -l %s", selected_app, selected_script);
 
     printf("\n[+] running: \n%s\n\n", frida_cmd);
     system(frida_cmd);
+    //snprintf(frida_cmd, sizeof(frida_cmd), "frida -U -f %s -l %s --no-pause", selected_app, selected_script);
 
     return 0;
 }
