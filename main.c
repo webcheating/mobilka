@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <ncurses.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/wait.h>
 
 #define MAX_DEVICES 5
 #define MAX_ITEMS 30
@@ -64,7 +68,7 @@ void get_local_ip(char *buf, int size) {
     }
     sscanf(out, "%63s", buf);
 }
-
+/*
 int get_adb_devices(char devices[][128]){
     int sock = socket(AF_INET, SOCKSTREAM, 0);
 
@@ -75,9 +79,9 @@ int get_adb_devices(char devices[][128]){
 
     connect(sock, (struct sockaddr*)&addr, sizeof(addr));
     send(sock, "000CHost:devices", 16, 0);
-}
+}*/
 
-/*
+
 int get_adb_devices(char devices[][128]) {
     char *out = exec_cmd("adb devices");
     if (!out) return 0;
@@ -93,7 +97,7 @@ int get_adb_devices(char devices[][128]) {
         line = strtok(NULL, "\n");
     }
     return count;
-}*/
+}
 
 int menu_select(char items[][256], int count, const char *title){
     int highlight = 0;
@@ -174,11 +178,11 @@ int main() {
     while (1) {
     dev_count = get_adb_devices(devices);
     
-    /*
+    
     if (dev_count > 0) {
     //    printf("\n[+] foud device\n\n");
         break;
-    }*/
+    }
 
     printf("\r[*] waiting for device connection...");
     fflush(stdout);
@@ -277,7 +281,9 @@ int main() {
     printf("\n[+] running: \n%s\n\n", frida_cmd);
     system(frida_cmd);
     //snprintf(frida_cmd, sizeof(frida_cmd), "frida -U -f %s -l %s --no-pause", selected_app, selected_script);
-
+    
+    //snprintf(proxy_cmd, sizeof(proxy_cmd), "adb -s %s shell settings put global http_proxy :0", device, local_ip);
+    //system(proxy_cmd);
     return 0;
 }
 
